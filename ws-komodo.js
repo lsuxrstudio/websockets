@@ -50,9 +50,41 @@ wss.on('connection', function connection(ws) {
   ws.on('close', function close() {
     console.log('Client disconnected');
   });
-});
 
-// Schedule sending the JSON message to clients every 2 seconds
-setInterval(sendJsonMessageToClients, 2000);
+  // Event listener for when a message is received from a client
+  ws.on('message', function incoming(message) {
+    console.log('Received: %s', message);
+
+    // Parse the received message as JSON
+    try {
+      const jsonMessage = JSON.parse(message);
+
+      // Check if the received JSON message contains "type": "rcp_config"
+      if (jsonMessage.type === 'rcp_config') {
+        // Reply back with the specified JSON message
+        const responseMessage = JSON.stringify({
+          type: 'rcp_config',
+          lang: 'en',
+          strings_decoded: 0,
+          json_minified: 1,
+          include_cacheable_flags: 0,
+          encoding_type: 'legacy'
+        });
+        ws.send(responseMessage);
+      }
+
+      // Check if the received JSON message matches the specified condition to start sending random messages
+      if (
+        jsonMessage.type === 'rcp_get' &&
+        jsonMessage.id === 'LENS_FOCUS_DISTANCE'
+      ) {
+        // Start sending the JSON message to clients every 2 seconds
+        setInterval(sendJsonMessageToClients, 2000);
+      }
+    } catch (error) {
+      console.error('Error parsing JSON:', error);
+    }
+  });
+});
 
 console.log('WebSocket server running on port 8080');
